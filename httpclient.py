@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # coding: utf-8
 # Copyright 2016 Abram Hindle, https://github.com/tywtyw2002, and https://github.com/treedust
+# Ferdous Adit
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -80,7 +81,7 @@ class HTTPClient(object):
         return None
 
     def get_code(self, data):
-        if data == '' or data == None:
+        if data == '' or data == None: #temp fix
             print("DATA IS EMPTY")
             return int(200)
         parsed_data = data.split('\r\n\r\n')
@@ -130,6 +131,8 @@ class HTTPClient(object):
                       "Connection: close\r\n",
                       "Content-Type: application/x-www-form-urlencoded\r\n",
                       "Content-Length: {length}}\r\n\r\n"]
+        body = body\r\n\r\n
+        header + body
 
         """
         response = None
