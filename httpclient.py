@@ -80,10 +80,15 @@ class HTTPClient(object):
         return None
 
     def get_code(self, data):
+        if data == '' or data == None:
+            print("DATA IS EMPTY")
+            return int(200)
         parsed_data = data.split('\r\n\r\n')
         print("THIS IS PARSED DATA: " + parsed_data[0])
         code = parsed_data[0].split('\r\n')  # the first line of http
         # split the first line and second col is code
+        print("PRINT ZERO: " + str(code[0]))
+        print("CODE ZERO SPLIT: " + str(code[0].split()))
         code = code[0].split()[1]
         return int(code)
 
@@ -116,24 +121,50 @@ class HTTPClient(object):
     def request_builder(self, command, args):
         """
         #request_to_send = command + " {self.}" HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n\r\n'
+
+        args returns a dictionary that cannot be normally read. I found something
+        online like urllib.parse.urlencode() that parse dictionary to normal query string. 
+
+        header = ["POST path HTTP/1.1\r\n",
+                      "Host: host.name\r\n",
+                      "Connection: close\r\n",
+                      "Content-Type: application/x-www-form-urlencoded\r\n",
+                      "Content-Length: {length}}\r\n\r\n"]
+
         """
-        top_part = f"{command} {self.total_path} HTTP/1.1\r\nHost: {self.hostname}\r\n"
-        bottom_part = "Connection: close\r\n\r\n"
         response = None
 
+        if args != None:
+            body = str(urllib.parse.urlencode(args))
+        else:
+            body = ''
+
         if command == 'GET':
+            top_part = f"{command} {self.total_path} HTTP/1.1\r\nHost: {self.hostname}\r\n"
+            bottom_part = "Connection: close\r\n\r\n"
             request_to_send = top_part + bottom_part
+
             print("REQUEST TO SEND: " + request_to_send)
             self.sendall(request_to_send)
             response = self.recvall(self.socket)
             return response
 
         if command == 'POST':
-            addtional_header = "Content-Type: application/x-www-form-urlencoded\r\nContent_Length: " + \
-                len(args[1]) + "\r\n"
-            request_to_send = top_part + \
-                addtional_header + bottom_part + args[1]
-            self.sendall(request_to_send)
+            # I don't know why attaching the Content-Type and Content-Length
+            # with the above string does not work. I took TA's help but we
+            # could not figure out why the problem was happening. The code looked right
+            # Someone on the wednesday lab suggested that they made dictionary,
+            # and the joined them later. This worked!!!
+
+            header = [f'{command} {self.total_path} HTTP/1.1\r\n',
+                      f'Host: {self.hostname}\r\n',
+                      "Connection: close\r\n",
+                      "Content-Type: application/x-www-form-urlencoded\r\n",
+                      f"Content-Length: {len(body)}\r\n\r\n"]
+            header.append(f"{body}\r\n\r\n")
+            request_to_send = "".join(header)
+
+            self.sendall(str(request_to_send))
             response = self.recvall(self.socket)
             return response
 
@@ -179,6 +210,7 @@ class HTTPClient(object):
 
         Return is none
         """
+        self.temp_url = url
         self.parsing_url_components(url)
         self.connect(self.hostname, self.port)
 
@@ -186,12 +218,14 @@ class HTTPClient(object):
         print("THIS IS THE POST RESPONSE: " + response)
         self.close()
 
-        header = self.get_headers(response)
-        body = self.get_body(response)
+        # header = self.get_headers(response)
+        # body = self.get_body(response)
 
-        # code = 500
-        # body = ""
-        return HTTPResponse(header, body)
+        print(f"BEFORE 222: {response}")
+        code = self.get_code(response)
+        print(f"THE CODE IS 222: {code}")
+        body = self.get_body(response)
+        return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
         if (command == "POST"):
